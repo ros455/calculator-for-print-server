@@ -2,7 +2,7 @@ import AdministrationModel from '../model/Administration.js';
 
 export const register = async (req, res) => {
     try {
-        const { login, password, isAdmin } = req.body;
+        const { login, password } = req.body;
         const canditate = await AdministrationModel.findOne({ login });
 
         if (canditate) {
@@ -12,7 +12,7 @@ export const register = async (req, res) => {
           const data = await AdministrationModel.create({
             login,
             password,
-            isAdmin
+            isAdmin: false
         });
     
         res.status(200).json(data);
