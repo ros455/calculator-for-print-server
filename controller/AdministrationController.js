@@ -2,7 +2,7 @@ import AdministrationModel from '../model/Administration.js';
 
 export const register = async (req, res) => {
     try {
-        const { login, password } = req.body;
+        const { login, password, color } = req.body;
         const canditate = await AdministrationModel.findOne({ login });
 
         if (canditate) {
@@ -12,7 +12,8 @@ export const register = async (req, res) => {
           const data = await AdministrationModel.create({
             login,
             password,
-            isAdmin: false
+            isAdmin: false,
+            color
         });
     
         res.status(200).json(data);
@@ -62,6 +63,29 @@ export const getMe = async (req, res) => {
   
       const { password, ...userData} = user._doc;
       res.json(userData);
+    } catch (e) {
+      console.log(e);
+      res.status(500).json({
+        message: 'Access denied'
+      });
+    }
+  }
+
+export const getAllManagers = async (req, res) => {
+    try {
+      const query = {
+        isAdmin: { $ne: true }, // Додаємо умову, щоб ігнорувати адміністраторів
+      };
+
+      const users = await AdministrationModel.find(query);
+  
+      if (!users) {
+        return res.status(404).json({
+          message: 'User not found'
+        });
+      }
+  
+      res.json(users);
     } catch (e) {
       console.log(e);
       res.status(500).json({
