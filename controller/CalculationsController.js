@@ -2,10 +2,13 @@ import CalculationsModel from '../model/Calculations.js';
 
 export const createCalculation = async (req, res) => {
     try {
-        const {clientId, orderName, delivery, design, aditionalRows, counts, markUp, priceForOne, salesAmountWithMarkup, costPrice, margin} = req.body;
+        const {clientId, orderName, productName, branding, salePrice, delivery, design, aditionalRows, counts, markUp, priceForOne, salesAmountWithMarkup, costPrice, margin} = req.body;
         const data = await CalculationsModel.create({
             clientId,
             orderName,
+            productName,
+            branding,
+            salePrice,
             delivery,
             design,
             aditionalRows,
@@ -30,7 +33,7 @@ export const createCalculation = async (req, res) => {
 
 export const updateCalculation = async (req, res) => {
     try {
-        const {id, clientId, orderName, delivery, design, aditionalRows, counts, markUp, priceForOne, salesAmountWithMarkup, costPrice, margin} = req.body;
+        const {id, clientId, productName, branding, salePrice, orderName, delivery, design, aditionalRows, counts, markUp, priceForOne, salesAmountWithMarkup, costPrice, margin} = req.body;
         const data = await CalculationsModel.findByIdAndUpdate(id);
 
         if(!data) {
@@ -47,6 +50,10 @@ export const updateCalculation = async (req, res) => {
         if(salesAmountWithMarkup) data.salesAmountWithMarkup = salesAmountWithMarkup;
         if(costPrice) data.costPrice = costPrice;
         if(margin) data.margin = margin;
+        if(clientId) data.clientId = clientId;
+        if(productName) data.productName = productName;
+        if(branding) data.branding = branding;
+        if(salePrice) data.salePrice = salePrice;
 
         await data.save();
 
