@@ -5,7 +5,7 @@ const OrdersSchema = new mongoose.Schema({
     managerId: { type: mongoose.Schema.Types.ObjectId, ref: "Administration" },
     status: String,
     orderName: String,
-    ProductName: {
+    productName: {
         title: String,
         sum: Number,
         comment: String

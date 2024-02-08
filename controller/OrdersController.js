@@ -2,12 +2,15 @@ import OrderModel from '../model/Orders.js';
 
 export const createOrder = async (req, res) => {
     try {
-        const {clientId, managerId, orderName, delivery, design, aditionalRows, counts, markUp, priceForOne, salesAmountWithMarkup, costPrice, margin} = req.body;
+        const {clientId, managerId, orderName, productName, branding, salePrice, delivery, design, aditionalRows, counts, markUp, priceForOne, salesAmountWithMarkup, costPrice, margin} = req.body;
         const data = await OrderModel.create({
             clientId,
             managerId,
             status: 'new',
             orderName,
+            productName,
+            branding,
+            salePrice,
             delivery,
             design,
             aditionalRows,
@@ -32,7 +35,7 @@ export const createOrder = async (req, res) => {
 
 export const updateOrder = async (req, res) => {
     try {
-        const {id, clientId, managerId, status, orderName, delivery, design, aditionalRows, counts, markUp, priceForOne, salesAmountWithMarkup, costPrice, margin} = req.body;
+        const {id, clientId, managerId, productName, branding, salePrice, status, orderName, delivery, design, aditionalRows, counts, markUp, priceForOne, salesAmountWithMarkup, costPrice, margin} = req.body;
         const data = await OrderModel.findByIdAndUpdate(id);
 
         if(!data) {
@@ -50,6 +53,11 @@ export const updateOrder = async (req, res) => {
         if(costPrice) data.costPrice = costPrice;
         if(margin) data.margin = margin;
         if(status) data.status = status;
+        if(productName) data.productName = productName;
+        if(branding) data.branding = branding;
+        if(salePrice) data.salePrice = salePrice;
+        if(clientId) data.clientId = clientId;
+        if(managerId) data.managerId = managerId;
 
         await data.save();
 
