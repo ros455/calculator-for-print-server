@@ -4,7 +4,13 @@ const OrdersSchema = new mongoose.Schema({
     clientId: { type: mongoose.Schema.Types.ObjectId, ref: "Clients" },
     managerId: { type: mongoose.Schema.Types.ObjectId, ref: "Administration" },
     status: String,
-    orderName: {
+    orderName: String,
+    ProductName: {
+        title: String,
+        sum: Number,
+        comment: String
+    },
+    branding: {
         title: String,
         sum: Number,
         comment: String
@@ -26,6 +32,7 @@ const OrdersSchema = new mongoose.Schema({
             comment: String
         }
     ],
+    salePrice: Number,
     counts: Number,
     markUp: Number,
     priceForOne: Number,

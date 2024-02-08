@@ -2,7 +2,13 @@ import mongoose from "mongoose";
 
 const CalculationsSchema = new mongoose.Schema({
     clientId: { type: mongoose.Schema.Types.ObjectId, ref: "Clients" },
-    orderName: {
+    orderName: String,
+    ProductName: {
+        title: String,
+        sum: Number,
+        comment: String
+    },
+    branding: {
         title: String,
         sum: Number,
         comment: String
@@ -24,6 +30,7 @@ const CalculationsSchema = new mongoose.Schema({
             comment: String
         }
     ],
+    salePrice: Number,
     counts: Number,
     markUp: Number,
     priceForOne: Number,
