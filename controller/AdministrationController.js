@@ -53,7 +53,7 @@ export const getMe = async (req, res) => {
       const {login} = req.params;
       const user = await AdministrationModel.findOne({ login });
 
-      console.log('user',user);
+      // console.log('user',user);
   
       if (!user) {
         return res.status(404).json({

@@ -6,7 +6,7 @@ export const createOrder = async (req, res) => {
         const data = await OrderModel.create({
             clientId,
             managerId,
-            status: 'new',
+            status: 'Новий',
             orderName,
             productName,
             branding,
@@ -21,11 +21,11 @@ export const createOrder = async (req, res) => {
             costPrice,
             margin
         })
-
+        
+        console.log('data',data);
         if(!data) {
             return res.status(500).json({ message: 'Failed create order' });
         }
-
         res.json(data);
     } catch(error) {
         console.error('error:', error);
