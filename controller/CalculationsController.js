@@ -64,19 +64,66 @@ export const updateCalculation = async (req, res) => {
     }
 }
 
+// export const getAllCalculations = async (req, res) => {
+//     try {
+//         const data = await CalculationsModel.find().populate('clientId');
+
+//         if(!data) {
+//             return res.status(404).json({ message: 'Calculations not found' });
+//         }
+
+//         res.json(data)
+
+//     } catch(error) {
+//         console.error('error:', error);
+//         res.status(500).json({ message: 'Server error' });
+//     }
+// }
 export const getAllCalculations = async (req, res) => {
     try {
-        const data = await CalculationsModel.find().populate('clientId');
+        const { page, limit, search } = req.query;
+        const skip = parseInt(page - 1) * parseInt(limit); // Переконайтеся, що ці значення є числами
 
-        if(!data) {
-            return res.status(404).json({ message: 'Calculations not found' });
+        // Створення початкового пайплайну з можливим $match для пошуку
+        let pipeline = [];
+
+        // Додавання умови $match, якщо є параметр пошуку
+        if (search) {
+            pipeline.push({
+                $match: {
+                    orderName: { $regex: search, $options: 'i' }, // Пошук за іменем без урахування регістру
+                }
+            });
         }
 
-        res.json(data)
+        if(search) {
+            pipeline = pipeline.concat([
+                { $addFields: { nameLower: { $toLower: "$orderName" } } },
+                { $sort: { nameLower: 1} },
+                { $skip: skip },
+                { $limit: parseInt(limit) },
+                { $lookup: { from: 'tables', localField: 'orders', foreignField: '_id', as: 'orders' } }
+            ]);
+        } else {
+            pipeline = pipeline.concat([
+                { $addFields: { nameLower: { $toLower: "$orderName" } } },
+                { $sort: { createdAt: -1} },
+                { $skip: skip },
+                { $limit: parseInt(limit) },
+                { $lookup: { from: 'tables', localField: 'orders', foreignField: '_id', as: 'orders' } }
+            ]);
+        }
 
-    } catch(error) {
-        console.error('error:', error);
-        res.status(500).json({ message: 'Server error' });
+
+        let allData = await CalculationsModel.aggregate(pipeline);
+
+        console.log('allData', allData);
+
+        // Відправка відсортованих даних
+        res.json(allData);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error: 'Помилка сервера' });
     }
 }
 
