@@ -43,20 +43,90 @@ export const updateClient = async (req, res) => {
     }
 }
 
+// export const getAllClients = async (req, res) => {
+//     // try {
+//     //     const data = await ClientModel.find();
+//     //     if(!data) {
+//     //         return res.status(404).json({ message: 'User not found' });
+//     //     }
+
+//     //     res.json(data)
+
+//     // } catch(error) {
+//     //     console.error('error:', error);
+//     //     res.status(404).json({ message: 'User not found' });
+//     // }
+//     try {
+//         const { page, limit } = req.query;
+//         const skip = parseInt(page - 1) * parseInt(limit); // Переконайтеся, що ці значення є числами
+    
+//         // Використання агрегаційного пайплайну для сортування без урахування регістру
+//         let allData = await ClientModel.aggregate([
+//           { $addFields: { nameLower: { $toLower: "$name" } } },
+//           { $sort: { nameLower: 1 } },
+//           { $skip: skip },
+//           { $limit: parseInt(limit) },
+//           { $lookup: { from: 'tables', localField: 'orders', foreignField: '_id', as: 'orders' } }
+//         ]);
+    
+//         console.log('allData',allData);
+    
+//         // Відправка відсортованих даних
+//         res.json(allData);
+//       } catch (error) {
+//         console.log(error);
+//         res.status(500).json({ error: 'Помилка сервера' });
+//       }
+// }
+
 export const getAllClients = async (req, res) => {
     try {
-        const data = await ClientModel.find();
-        if(!data) {
-            return res.status(404).json({ message: 'User not found' });
+        const { page, limit, search } = req.query;
+        const skip = parseInt(page - 1) * parseInt(limit); // Переконайтеся, що ці значення є числами
+
+        // Створення початкового пайплайну з можливим $match для пошуку
+        let pipeline = [];
+
+        // Додавання умови $match, якщо є параметр пошуку
+        if (search) {
+            pipeline.push({
+                $match: {
+                    fullName: { $regex: search, $options: 'i' }, // Пошук за іменем без урахування регістру
+                }
+            });
         }
 
-        res.json(data)
+        if(search) {
+            pipeline = pipeline.concat([
+                { $addFields: { nameLower: { $toLower: "$fullName" } } },
+                { $sort: { nameLower: 1} },
+                { $skip: skip },
+                { $limit: parseInt(limit) },
+                { $lookup: { from: 'tables', localField: 'orders', foreignField: '_id', as: 'orders' } }
+            ]);
+        } else {
+            pipeline = pipeline.concat([
+                { $addFields: { nameLower: { $toLower: "$fullName" } } },
+                { $sort: { createdAt: -1} },
+                { $skip: skip },
+                { $limit: parseInt(limit) },
+                { $lookup: { from: 'tables', localField: 'orders', foreignField: '_id', as: 'orders' } }
+            ]);
+        }
 
-    } catch(error) {
-        console.error('error:', error);
-        res.status(404).json({ message: 'User not found' });
+
+        let allData = await ClientModel.aggregate(pipeline);
+
+        console.log('allData', allData);
+
+        // Відправка відсортованих даних
+        res.json(allData);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error: 'Помилка сервера' });
     }
 }
+
 export const deleteClient = async (req, res) => {
     try {
         const {id} = req.body;

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const OrdersSchema = new mongoose.Schema({
+    id: Number,
     clientId: { type: mongoose.Schema.Types.ObjectId, ref: "Clients" },
     managerId: { type: mongoose.Schema.Types.ObjectId, ref: "Administration" },
     status: String,
