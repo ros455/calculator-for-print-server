@@ -76,6 +76,8 @@ export const getAllOrders = async (req, res) => {
     try {
         const { page, limit, search } = req.query;
         const skip = parseInt(page - 1) * parseInt(limit);
+        const allLength = (await OrderModel.find()).length;
+        const lastPage = Math.ceil(allLength / limit)
 
         let pipeline = [];
 
@@ -101,12 +103,13 @@ export const getAllOrders = async (req, res) => {
         // Додавання пагінації та lookup
         pipeline.push({ $skip: skip });
         pipeline.push({ $limit: parseInt(limit) });
-        pipeline.push({ $lookup: { from: 'tables', localField: 'orders', foreignField: '_id', as: 'orders' } });
+        pipeline.push({ $lookup: { from: 'clients', localField: 'clientId', foreignField: '_id', as: 'clientId' } });
+        pipeline.push({ $lookup: { from: 'administrations', localField: 'managerId', foreignField: '_id', as: 'managerId' } });
 
         let allData = await OrderModel.aggregate(pipeline);
 
-        console.log('allData', allData);
-        res.json(allData);
+        // res.json(allData);
+        res.json({pagination: {pageCount: lastPage}, list: allData});
     } catch (error) {
         console.log(error);
         res.status(500).json({ error: 'Помилка сервера' });
@@ -178,6 +181,27 @@ export const sortByStatus = async (req, res) => {
         .skip(skip)
         .limit(limit)
         // .populate("user");
+
+        if(!tables) {
+            res.status(404).json({ error: 'Таблиць не знайдено' });
+        }
+
+        res.json(tables);
+    } catch(error) {
+        console.log(error);
+        res.status(404).json({ error: 'Користувача не знайдено' });
+    }
+  }
+
+export const sortByManager = async (req, res) => {
+    try {
+        const {manager, page, limit} = req.query;
+        const skip = (page - 1) * limit;
+        const tables = await OrderModel.find({"managerId": manager})
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate(["clientId", "managerId"]);
 
         if(!tables) {
             res.status(404).json({ error: 'Таблиць не знайдено' });

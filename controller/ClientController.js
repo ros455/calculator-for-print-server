@@ -43,46 +43,13 @@ export const updateClient = async (req, res) => {
     }
 }
 
-// export const getAllClients = async (req, res) => {
-//     // try {
-//     //     const data = await ClientModel.find();
-//     //     if(!data) {
-//     //         return res.status(404).json({ message: 'User not found' });
-//     //     }
-
-//     //     res.json(data)
-
-//     // } catch(error) {
-//     //     console.error('error:', error);
-//     //     res.status(404).json({ message: 'User not found' });
-//     // }
-//     try {
-//         const { page, limit } = req.query;
-//         const skip = parseInt(page - 1) * parseInt(limit); // Переконайтеся, що ці значення є числами
-    
-//         // Використання агрегаційного пайплайну для сортування без урахування регістру
-//         let allData = await ClientModel.aggregate([
-//           { $addFields: { nameLower: { $toLower: "$name" } } },
-//           { $sort: { nameLower: 1 } },
-//           { $skip: skip },
-//           { $limit: parseInt(limit) },
-//           { $lookup: { from: 'tables', localField: 'orders', foreignField: '_id', as: 'orders' } }
-//         ]);
-    
-//         console.log('allData',allData);
-    
-//         // Відправка відсортованих даних
-//         res.json(allData);
-//       } catch (error) {
-//         console.log(error);
-//         res.status(500).json({ error: 'Помилка сервера' });
-//       }
-// }
-
 export const getAllClients = async (req, res) => {
     try {
         const { page, limit, search } = req.query;
         const skip = parseInt(page - 1) * parseInt(limit); // Переконайтеся, що ці значення є числами
+
+        const allLength = (await ClientModel.find()).length;
+        const lastPage = Math.ceil(allLength / limit)
 
         // Створення початкового пайплайну з можливим $match для пошуку
         let pipeline = [];
@@ -117,10 +84,9 @@ export const getAllClients = async (req, res) => {
 
         let allData = await ClientModel.aggregate(pipeline);
 
-        console.log('allData', allData);
-
         // Відправка відсортованих даних
-        res.json(allData);
+        // res.json(allData);
+        res.json({pagination: {pageCount: lastPage}, list: allData});
     } catch (error) {
         console.log(error);
         res.status(500).json({ error: 'Помилка сервера' });
