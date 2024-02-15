@@ -180,7 +180,7 @@ export const sortByStatus = async (req, res) => {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        // .populate("user");
+        .populate(["clientId","managerId" ]);
 
         if(!tables) {
             res.status(404).json({ error: 'Таблиць не знайдено' });
