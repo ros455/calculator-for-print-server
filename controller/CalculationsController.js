@@ -3,8 +3,12 @@ import CalculationsModel from '../model/Calculations.js';
 export const createCalculation = async (req, res) => {
     try {
         const {clientId, orderName, productName, branding, salePrice, delivery, design, aditionalRows, counts, markUp, priceForOne, salesAmountWithMarkup, costPrice, margin} = req.body;
+        
+        const lastId = await CalculationsModel.findOne({}, {}, { sort: { id: -1 } });
+        const id = (lastId && lastId.id) ? lastId.id + 1 : 1;
         const data = await CalculationsModel.create({
             clientId,
+            id,
             orderName,
             productName,
             branding,
@@ -84,6 +88,12 @@ export const getAllCalculations = async (req, res) => {
         const { page, limit, search } = req.query;
         const skip = parseInt(page - 1) * parseInt(limit); // Переконайтеся, що ці значення є числами
 
+        const allLength = (await CalculationsModel.find()).length;
+        const lastPage = Math.ceil(allLength / limit)
+
+
+        console.log('lastPage',lastPage);
+
         // Створення початкового пайплайну з можливим $match для пошуку
         let pipeline = [];
 
@@ -102,25 +112,23 @@ export const getAllCalculations = async (req, res) => {
                 { $sort: { nameLower: 1} },
                 { $skip: skip },
                 { $limit: parseInt(limit) },
-                { $lookup: { from: 'tables', localField: 'orders', foreignField: '_id', as: 'orders' } }
+                { $lookup: { from: 'clients', localField: 'clientId', foreignField: '_id', as: 'clientId' } }
             ]);
         } else {
             pipeline = pipeline.concat([
                 { $addFields: { nameLower: { $toLower: "$orderName" } } },
-                { $sort: { createdAt: -1} },
                 { $skip: skip },
                 { $limit: parseInt(limit) },
-                { $lookup: { from: 'tables', localField: 'orders', foreignField: '_id', as: 'orders' } }
+                { $lookup: { from: 'clients', localField: 'clientId', foreignField: '_id', as: 'clientId' } }
             ]);
         }
 
 
         let allData = await CalculationsModel.aggregate(pipeline);
 
-        console.log('allData', allData);
-
         // Відправка відсортованих даних
-        res.json(allData);
+        // res.json(allData);
+        res.json({pagination: {pageCount: lastPage}, list: allData});
     } catch (error) {
         console.log(error);
         res.status(500).json({ error: 'Помилка сервера' });
