@@ -69,7 +69,6 @@ export const getAllClients = async (req, res) => {
                 { $sort: { nameLower: 1} },
                 { $skip: skip },
                 { $limit: parseInt(limit) },
-                { $lookup: { from: 'tables', localField: 'orders', foreignField: '_id', as: 'orders' } }
             ]);
         } else {
             pipeline = pipeline.concat([
@@ -77,7 +76,6 @@ export const getAllClients = async (req, res) => {
                 { $sort: { createdAt: -1} },
                 { $skip: skip },
                 { $limit: parseInt(limit) },
-                { $lookup: { from: 'tables', localField: 'orders', foreignField: '_id', as: 'orders' } }
             ]);
         }
 

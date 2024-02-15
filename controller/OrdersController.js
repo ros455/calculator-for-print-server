@@ -176,6 +176,10 @@ export const sortByStatus = async (req, res) => {
     try {
         const {status, page, limit} = req.query;
         const skip = (page - 1) * limit;
+
+        const allLength = (await OrderModel.find()).length;
+        const lastPage = Math.ceil(allLength / limit)
+
         const tables = await OrderModel.find({"status": status})
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -186,7 +190,7 @@ export const sortByStatus = async (req, res) => {
             res.status(404).json({ error: 'Таблиць не знайдено' });
         }
 
-        res.json(tables);
+        res.json({pagination: {pageCount: lastPage}, list: tables});
     } catch(error) {
         console.log(error);
         res.status(404).json({ error: 'Користувача не знайдено' });
@@ -197,6 +201,10 @@ export const sortByManager = async (req, res) => {
     try {
         const {manager, page, limit} = req.query;
         const skip = (page - 1) * limit;
+
+        const allLength = (await OrderModel.find()).length;
+        const lastPage = Math.ceil(allLength / limit)
+
         const tables = await OrderModel.find({"managerId": manager})
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -207,7 +215,7 @@ export const sortByManager = async (req, res) => {
             res.status(404).json({ error: 'Таблиць не знайдено' });
         }
 
-        res.json(tables);
+        res.json({pagination: {pageCount: lastPage}, list: tables});
     } catch(error) {
         console.log(error);
         res.status(404).json({ error: 'Користувача не знайдено' });
