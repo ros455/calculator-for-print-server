@@ -1,4 +1,5 @@
 import OrderModel from '../model/Orders.js';
+import mongoose from 'mongoose';
 
 export const createOrder = async (req, res) => {
     try {
@@ -77,7 +78,7 @@ export const getAllOrders = async (req, res) => {
         const { page, limit, search } = req.query;
         const skip = parseInt(page - 1) * parseInt(limit);
         const allLength = (await OrderModel.find()).length;
-        const lastPage = Math.ceil(allLength / limit)
+        const lastPage = Math.ceil(allLength / parseInt(limit));
 
         let pipeline = [];
 
@@ -103,12 +104,117 @@ export const getAllOrders = async (req, res) => {
         // Додавання пагінації та lookup
         pipeline.push({ $skip: skip });
         pipeline.push({ $limit: parseInt(limit) });
-        pipeline.push({ $lookup: { from: 'clients', localField: 'clientId', foreignField: '_id', as: 'clientId' } });
-        pipeline.push({ $lookup: { from: 'administrations', localField: 'managerId', foreignField: '_id', as: 'managerId' } });
+        pipeline.push({
+            $lookup: {
+                from: 'clients',
+                localField: 'clientId',
+                foreignField: '_id',
+                as: 'clientId'
+            }
+        });
+        pipeline.push({
+            $lookup: {
+                from: 'administrations',
+                localField: 'managerId',
+                foreignField: '_id',
+                as: 'managerId'
+            }
+        });
+
+        // Розгортання clientId та managerId для перетворення масиву в об'єкт
+        pipeline.push({
+            $unwind: {
+                path: "$clientId",
+                preserveNullAndEmptyArrays: true // Це збереже документи, у яких clientId або пустий, або не існує
+            }
+        });
+        pipeline.push({
+            $unwind: {
+                path: "$managerId",
+                preserveNullAndEmptyArrays: true // Це збереже документи, у яких managerId або пустий, або не існує
+            }
+        });
 
         let allData = await OrderModel.aggregate(pipeline);
 
-        // res.json(allData);
+        res.json({pagination: {pageCount: lastPage}, list: allData});
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error: 'Помилка сервера' });
+    }
+}
+
+export const getAllOrdersForManager = async (req, res) => {
+    try {
+        const { page, limit, managerId, search } = req.query;
+        const skip = parseInt(page - 1) * parseInt(limit);
+
+        let matchCondition = {};
+        if (managerId) {
+            // Використання 'new' для створення екземпляра ObjectId
+            matchCondition['managerId'] = new mongoose.Types.ObjectId(managerId);
+        }
+
+        // Розрахунок загальної кількості замовлень за managerId
+        const allLength = await OrderModel.find(matchCondition).countDocuments();
+        const lastPage = Math.ceil(allLength / parseInt(limit));
+        
+
+        let pipeline = [
+            { $match: matchCondition },
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: parseInt(limit) },
+            {
+                $lookup: {
+                    from: 'clients',
+                    localField: 'clientId',
+                    foreignField: '_id',
+                    as: 'clientId'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'administrations',
+                    localField: 'managerId',
+                    foreignField: '_id',
+                    as: 'managerId'
+                }
+            },
+            {
+                $unwind: {
+                    path: "$clientId",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $unwind: {
+                    path: "$managerId",
+                    preserveNullAndEmptyArrays: true
+                }
+            }
+        ];
+
+        const searchId = parseInt(search);
+
+        // Додавання умови $match, якщо є параметр пошуку та він є валідним числом
+        if (search && !isNaN(searchId)) {
+            pipeline.push({
+                $match: {
+                    id: searchId
+                }
+            });
+        }
+
+        // Визначення сортування залежно від наявності параметру пошуку
+        if (search) {
+            pipeline.push({ $sort: { id: 1 } }); // Сортування за ID, якщо є пошук
+        } else {
+            pipeline.push({ $sort: { createdAt: -1 } }); // Стандартне сортування за часом створення
+        }
+
+        let allData = await OrderModel.aggregate(pipeline);
+
         res.json({pagination: {pageCount: lastPage}, list: allData});
     } catch (error) {
         console.log(error);
@@ -196,6 +302,41 @@ export const sortByStatus = async (req, res) => {
         res.status(404).json({ error: 'Користувача не знайдено' });
     }
   }
+  
+export const sortByStatusForManager = async (req, res) => {
+    try {
+        const {status, page, limit, managerId} = req.query;
+        const skip = parseInt(page - 1) * parseInt(limit); // Переконайтесь, що це число
+
+        // Перетворення limit з рядка в число
+        const numericLimit = parseInt(limit);
+
+        // Спочатку фільтруємо замовлення за managerId, а потім за статусом
+        const matchCondition = {
+            managerId: managerId, // Тут можливо потрібне перетворення в ObjectId, залежно від вашої схеми
+            status: status
+        };
+
+        // Розрахунок загальної кількості замовлень за заданими умовами
+        const allLength = await OrderModel.find(matchCondition).countDocuments();
+        const lastPage = Math.ceil(allLength / numericLimit);
+
+        const tables = await OrderModel.find(matchCondition)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(numericLimit)
+            .populate(["clientId", "managerId"]);
+
+        if (!tables.length) {
+            return res.status(404).json({ error: 'Таблиць не знайдено' });
+        }
+
+        res.json({pagination: {pageCount: lastPage}, list: tables});
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error: 'Користувача не знайдено' });
+    }
+}
 
 export const sortByManager = async (req, res) => {
     try {
