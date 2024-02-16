@@ -15,6 +15,7 @@ app.use(cors({
   credentials: true,
   origin: [
     'http://localhost:3000',
+    'https://calculator-for-print-client.vercel.app'
   ]
 }));
 
