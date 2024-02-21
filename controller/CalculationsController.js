@@ -118,6 +118,7 @@ export const getAllCalculations = async (req, res) => {
             pipeline = pipeline.concat([
                 { $addFields: { nameLower: { $toLower: "$orderName" } } },
                 { $skip: skip },
+                { $sort: { createdAt: -1} },
                 { $limit: parseInt(limit) },
                 { $lookup: { from: 'clients', localField: 'clientId', foreignField: '_id', as: 'clientId' } }
             ]);
