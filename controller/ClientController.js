@@ -58,21 +58,21 @@ export const getAllClients = async (req, res) => {
         if (search) {
             pipeline.push({
                 $match: {
-                    fullName: { $regex: search, $options: 'i' }, // Пошук за іменем без урахування регістру
+                    company: { $regex: search, $options: 'i' }, // Пошук за іменем без урахування регістру
                 }
             });
         }
 
         if(search) {
             pipeline = pipeline.concat([
-                { $addFields: { nameLower: { $toLower: "$fullName" } } },
+                { $addFields: { nameLower: { $toLower: "$company" } } },
                 { $sort: { nameLower: 1} },
                 { $skip: skip },
                 { $limit: parseInt(limit) },
             ]);
         } else {
             pipeline = pipeline.concat([
-                { $addFields: { nameLower: { $toLower: "$fullName" } } },
+                { $addFields: { nameLower: { $toLower: "$company" } } },
                 { $sort: { createdAt: -1} },
                 { $skip: skip },
                 { $limit: parseInt(limit) },
@@ -82,8 +82,6 @@ export const getAllClients = async (req, res) => {
 
         let allData = await ClientModel.aggregate(pipeline);
 
-        // Відправка відсортованих даних
-        // res.json(allData);
         res.json({pagination: {pageCount: lastPage}, list: allData});
     } catch (error) {
         console.log(error);
