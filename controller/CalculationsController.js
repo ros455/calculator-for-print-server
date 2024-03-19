@@ -83,58 +83,97 @@ export const updateCalculation = async (req, res) => {
 //         res.status(500).json({ message: 'Server error' });
 //     }
 // }
+
+// export const getAllCalculations = async (req, res) => {
+//     try {
+//         const { page, limit, search } = req.query;
+//         const skip = parseInt(page - 1) * parseInt(limit);
+
+//         const allLength = (await CalculationsModel.find()).length;
+//         const lastPage = Math.ceil(allLength / limit)
+
+
+//         console.log('lastPage',lastPage);
+
+//         let pipeline = [];
+
+//         if (search) {
+//             pipeline.push({
+//                 $match: {
+//                     orderName: { $regex: search, $options: 'i' }, 
+//                 }
+//             });
+//         }
+
+//         if(search) {
+//             pipeline = pipeline.concat([
+//                 { $addFields: { nameLower: { $toLower: "$orderName" } } },
+//                 { $sort: { nameLower: 1} },
+//                 { $skip: skip },
+//                 { $limit: parseInt(limit) },
+//                 { $lookup: { from: 'clients', localField: 'clientId', foreignField: '_id', as: 'clientId' } }
+//             ]);
+//         } else {
+//             pipeline = pipeline.concat([
+//                 { $addFields: { nameLower: { $toLower: "$orderName" } } },
+//                 { $skip: skip },
+//                 { $sort: { createdAt: -1} },
+//                 { $limit: parseInt(limit) },
+//                 { $lookup: { from: 'clients', localField: 'clientId', foreignField: '_id', as: 'clientId' } }
+//             ]);
+//         }
+
+
+//         let allData = await CalculationsModel.aggregate(pipeline);
+
+//         res.json({pagination: {pageCount: lastPage}, list: allData});
+//     } catch (error) {
+//         console.log(error);
+//         res.status(500).json({ error: 'Помилка сервера' });
+//     }
+// }
+
+
 export const getAllCalculations = async (req, res) => {
     try {
-        const { page, limit, search } = req.query;
-        const skip = parseInt(page - 1) * parseInt(limit); // Переконайтеся, що ці значення є числами
+        const { page = 1, limit = 10, search } = req.query; // Задаємо значення за замовчуванням, якщо параметри не передані
+        const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        const allLength = (await CalculationsModel.find()).length;
-        const lastPage = Math.ceil(allLength / limit)
-
-
-        console.log('lastPage',lastPage);
-
-        // Створення початкового пайплайну з можливим $match для пошуку
+        // Створення початкового пайплайну
         let pipeline = [];
 
         // Додавання умови $match, якщо є параметр пошуку
         if (search) {
             pipeline.push({
                 $match: {
-                    orderName: { $regex: search, $options: 'i' }, // Пошук за іменем без урахування регістру
+                    orderName: { $regex: search, $options: 'i' },
                 }
             });
         }
 
-        if(search) {
-            pipeline = pipeline.concat([
-                { $addFields: { nameLower: { $toLower: "$orderName" } } },
-                { $sort: { nameLower: 1} },
-                { $skip: skip },
-                { $limit: parseInt(limit) },
-                { $lookup: { from: 'clients', localField: 'clientId', foreignField: '_id', as: 'clientId' } }
-            ]);
-        } else {
-            pipeline = pipeline.concat([
-                { $addFields: { nameLower: { $toLower: "$orderName" } } },
-                { $skip: skip },
-                { $sort: { createdAt: -1} },
-                { $limit: parseInt(limit) },
-                { $lookup: { from: 'clients', localField: 'clientId', foreignField: '_id', as: 'clientId' } }
-            ]);
-        }
+        // Додавання спільних частин до пайплайну
+        pipeline = pipeline.concat([
+            { $addFields: { nameLower: { $toLower: "$orderName" } } },
+            { $sort: search ? { nameLower: 1 } : { createdAt: -1 } }, // Умовне сортування
+            { $skip: skip },
+            { $limit: parseInt(limit) },
+            { $lookup: { from: 'clients', localField: 'clientId', foreignField: '_id', as: 'clientId' } }
+        ]);
 
+        const allData = await CalculationsModel.aggregate(pipeline);
+        const allLength = await CalculationsModel.countDocuments(); // Підрахунок загальної кількості документів для пагінації
+        const lastPage = Math.ceil(allLength / limit);
 
-        let allData = await CalculationsModel.aggregate(pipeline);
-
-        // Відправка відсортованих даних
-        // res.json(allData);
-        res.json({pagination: {pageCount: lastPage}, list: allData});
+        // Відправка відсортованих даних з інформацією про пагінацію
+        res.json({
+            pagination: { pageCount: lastPage },
+            list: allData
+        });
     } catch (error) {
-        console.log(error);
+        console.error(error);
         res.status(500).json({ error: 'Помилка сервера' });
     }
-}
+};
 
 export const getOneCalculation = async (req, res) => {
     try {
